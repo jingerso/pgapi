@@ -1,0 +1,105 @@
+.App {
+  text-align: left;
+}
+
+.App-logo {
+  animation: App-logo-spin infinite 20s linear;
+  height: 80px;
+}
+
+.App-header {
+  background-color: #222;
+  height: 150px;
+  padding: 20px;
+  color: white;
+}
+
+.App-intro {
+  font-size: large;
+}
+
+@keyframes App-logo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+a {
+  text-decoration: none;
+}
+
+.verticalLine {
+  width: 21px;
+  height: 21px;
+  position: relative;
+  display: inline-block;
+}
+
+.verticalLine::after {
+  content: '';
+  position: absolute;
+  border-left: 1px solid rgba(0,0,0,.26);
+  left: 10px;
+  top: 0;
+  height:21px;
+  z-index: 1
+}
+
+.verticalLine.last::after {
+  border-left: 0;
+}
+
+.dirtree {
+  padding: 4px;
+  line-height: 0;
+  position: relative;
+}
+
+.dirtree::before {
+  content: '';
+  position: absolute;
+  border-left: 1px solid rgba(0,0,0,.26);
+  left: 10px;
+  top: 0;
+  height: 21px;
+  width: 11px;
+  z-index: -1;
+}
+
+.dirtree.dirtree_elbow::before {
+  border-bottom: 1px solid rgba(0,0,0,.26);
+  height: 10px
+}
+
+.dirtree_tee::after {
+  content: '';
+  position: absolute;
+  border-bottom: 1px solid rgba(0,0,0,.26);
+  left: 10px;
+  top: -11px;
+  height: 21px;
+  width: 11px;
+  z-index: -1;
+}
+
+i.blank {
+  border: 1px solid rgba(255,255,255,0);
+  background-color: rgba(255,255,255,0);
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+}
+
+/* Rules for sizing the icon. */
+.material-icons.md-11 { font-size: 11px; border: 1px solid rgba(0,0,0, .26); border-radius: 3px; background-color: #fff; }
+.material-icons.md-18 { font-size: 18px; }
+.material-icons.md-24 { font-size: 24px; }
+.material-icons.md-36 { font-size: 36px; }
+.material-icons.md-48 { font-size: 48px; }
+
+/* Rules for using icons as black on a light background. */
+.material-icons.md-dark { color: rgba(0, 0, 0, 0.54); }
+.material-icons.md-dark.md-inactive { color: rgba(0, 0, 0, 0.26); }
+
+/* Rules for using icons as white on a dark background. */
+.material-icons.md-light { color: rgba(255, 255, 255, 1); }
+.material-icons.md-light.md-inactive { color: rgba(255, 255, 255, 0.3); }

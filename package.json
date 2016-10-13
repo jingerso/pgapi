@@ -1,0 +1,37 @@
+{
+  "name": "pgchamp",
+  "version": "0.0.1",
+  "description": "Web based admin for Postgres",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jingerso/pgchamp.git"
+  },
+  "keywords": [
+    "postgres",
+    "postgresql",
+    "admin"
+  ],
+  "author": "Joe Ingersoll",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/jingerso/pgchamp/issues"
+  },
+  "homepage": "https://github.com/jingerso/pgchamp#readme",
+  "dependencies": {
+    "express": "^4.14.0",
+    "pg-promise": "^5.3.4"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.16.0",
+    "babel-plugin-transform-object-rest-spread": "^6.16.0",
+    "babel-polyfill": "^6.16.0",
+    "babel-preset-latest": "^6.16.0",
+    "pg-monitor": "^0.5.11"
+  },
+  "eslintConfig": {
+    "extends": "./eslint.js"
+  }
+}
