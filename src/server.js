@@ -29,49 +29,49 @@ app.get('/api/servers', async (req, res) => {
   res.send(list)
 })
 
-app.get('/api/:host/:port/:db/:username/databases', async (req, res) => {
-  const result = await query(req.params).many('SELECT * FROM pg_database WHERE NOT datistemplate ORDER BY datname')
+app.get('/api/:username/:host/:port/:db/databases', async (req, res) => {
+  const result = await query(req.params).any('SELECT * FROM pg_database WHERE NOT datistemplate ORDER BY datname')
 
   res.send(result)
 })
 
-app.get('/api/:host/:port/:db/:username/tablespaces', async (req, res) => {
-  const result = await query(req.params).many('SELECT * FROM pg_tablespace ORDER BY spcname')
+app.get('/api/:username/:host/:port/:db/tablespaces', async (req, res) => {
+  const result = await query(req.params).any('SELECT * FROM pg_tablespace ORDER BY spcname')
 
   res.send(result)
 })
 
-app.get('/api/:host/:port/:db/:username/roles', async (req, res) => {
-  const result = await query(req.params).many('SELECT * FROM pg_roles ORDER BY rolname')
+app.get('/api/:username/:host/:port/:db/roles', async (req, res) => {
+  const result = await query(req.params).any('SELECT * FROM pg_roles ORDER BY rolname')
 
   res.send(result)
 })
 
-app.get('/api/:host/:port/:db/:username/databases/:database/schemas', async (req, res) => {
+app.get('/api/:username/:host/:port/:db/databases/:database/schemas', async (req, res) => {
   const sql = `SELECT * FROM pg_namespace WHERE nspname !~ '^pg_' AND nspname <> 'information_schema' ORDER BY nspname`
 
-  const result = await query(req.params).many(sql)
+  const result = await query(req.params).any(sql)
 
   res.send(result)
 })
 
-app.get('/api/:host/:port/:db/:username/databases/:database/extensions', async (req, res) => {
+app.get('/api/:username/:host/:port/:db/databases/:database/extensions', async (req, res) => {
   const sql = `SELECT * FROM pg_extension ORDER BY extname`
 
-  const result = await query(req.params).many(sql)
+  const result = await query(req.params).any(sql)
 
   res.send(result)
 })
 
-app.get('/api/:host/:port/:db/:username/databases/:database/schemas/:schema/tables', async (req, res) => {
+app.get('/api/:username/:host/:port/:db/databases/:database/schemas/:schema/tables', async (req, res) => {
   const sql = `SELECT * FROM pg_tables WHERE schemaname = $/schema/ ORDER BY tablename`
 
-  const result = await query(req.params).many(sql, { schema: req.params.schema })
+  const result = await query(req.params).any(sql, { schema: req.params.schema })
 
   res.send(result)
 })
 
-app.get('/api/:host/:port/:db/:username/databases/:database/schemas/:schema/tables/:table/columns', async (req, res) => {
+app.get('/api/:username/:host/:port/:db/databases/:database/schemas/:schema/tables/:table/columns', async (req, res) => {
   const table = await query(req.params).one(`
     SELECT c.oid,
       n.nspname,
@@ -83,7 +83,7 @@ app.get('/api/:host/:port/:db/:username/databases/:database/schemas/:schema/tabl
     ORDER BY 2, 3
   `, { table: `^(${req.params.table})$`, schema: `^(${req.params.schema})$` })
 
-  const result = await query(req.params).many(`
+  const result = await query(req.params).any(`
     SELECT a.attname,
       pg_catalog.format_type(a.atttypid, a.atttypmod),
       (SELECT substring(pg_catalog.pg_get_expr(d.adbin, d.adrelid) for 128)
@@ -100,7 +100,7 @@ app.get('/api/:host/:port/:db/:username/databases/:database/schemas/:schema/tabl
   res.send(result)
 })
 
-app.get('/api/:host/:port/:db/:username/databases/:database/schemas/:schema/tables/:table/indexes', async (req, res) => {
+app.get('/api/:username/:host/:port/:db/databases/:database/schemas/:schema/tables/:table/indexes', async (req, res) => {
   const table = await query(req.params).one(`
     SELECT c.oid,
       n.nspname,
@@ -112,7 +112,7 @@ app.get('/api/:host/:port/:db/:username/databases/:database/schemas/:schema/tabl
     ORDER BY 2, 3
   `, { table: `^(${req.params.table})$`, schema: `^(${req.params.schema})$` })
 
-  const result = await query(req.params).many(`
+  const result = await query(req.params).any(`
     SELECT c2.relname, i.indisprimary, i.indisunique, i.indisclustered, i.indisvalid, pg_catalog.pg_get_indexdef(i.indexrelid, 0, true),
       pg_catalog.pg_get_constraintdef(con.oid, true), contype, condeferrable, condeferred, c2.reltablespace
     FROM pg_catalog.pg_class c, pg_catalog.pg_class c2, pg_catalog.pg_index i
@@ -124,7 +124,7 @@ app.get('/api/:host/:port/:db/:username/databases/:database/schemas/:schema/tabl
   res.send(result)
 })
 
-app.get('/api/:host/:port/:db/:username/databases/:database/schemas/:schema/tables/:table/constraints', async (req, res) => {
+app.get('/api/:username/:host/:port/:db/databases/:database/schemas/:schema/tables/:table/constraints', async (req, res) => {
   const table = await query(req.params).one(`
     SELECT c.oid,
       n.nspname,
@@ -136,7 +136,7 @@ app.get('/api/:host/:port/:db/:username/databases/:database/schemas/:schema/tabl
     ORDER BY 2, 3
   `, { table: `^(${req.params.table})$`, schema: `^(${req.params.schema})$` })
 
-  const result = await query(req.params).many(`
+  const result = await query(req.params).any(`
     SELECT conname,
       pg_catalog.pg_get_constraintdef(r.oid, true) as condef
     FROM pg_catalog.pg_constraint r
