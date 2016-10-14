@@ -1,6 +1,5 @@
 import React, { Component } from 'react'
 import fetch from 'isomorphic-fetch'
-import ResizableBox from './ResizableComponent.jsx'
 import './App.css'
 import Collections from './Collections'
 
