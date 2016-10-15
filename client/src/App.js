@@ -6,17 +6,38 @@ import 'react-virtualized/styles.css'
 import './App.css'
 import Collections from './Collections'
 
-const server_path = ({host,port,username,db}) => `${username}/${host}/${port}/${db}`
+const server_path = ({
+  host,
+  port,
+  username,
+  db
+}) => `${username}/${host}/${port}/${db}`
 
 const is_empty = (state, key) => {
   const ids = state.remote_ids[key] || []
 
-  return !state.loading[key] && (typeof state.remote_ids[key] !== 'undefined') && !ids.length
+  return (
+    !state.loading[key]
+    && (typeof state.remote_ids[key] !== 'undefined')
+    && !ids.length
+  )
 }
 
-const steps = ({is_last}) => is_last.slice(0, -1).map((is_last,i) => <div key={i} className={ is_last ? 'verticalLine last' : "verticalLine" }></div>)
+const steps = ({is_last}) => is_last.slice(0, -1).map((is_last,i) => <div
+    key={i}
+    className={ is_last ? 'verticalLine last' : "verticalLine" }>
+  </div>
+)
 
-const Expand = ({is_last, leaf, empty, expanded, loading, handleToggleTree, object}) => {
+const Expand = ({
+  is_last,
+  leaf,
+  empty,
+  expanded,
+  loading,
+  handleToggleTree,
+  object
+}) => {
   let classNames = [
     'dirtree',
     is_last[is_last.length - 1] ? 'dirtree_elbow' : 'dirtree_tee'
@@ -26,19 +47,40 @@ const Expand = ({is_last, leaf, empty, expanded, loading, handleToggleTree, obje
 
   if (!leaf) classNames.push(expanded ? 'dirtree_minus' : 'dirtree_plus')
 
-  let icon = <i className="material-icons md-11">{expanded ? 'remove' : 'add'}</i>
+  let icon = <i
+    className="material-icons md-11">
+    {expanded ? 'remove' : 'add'}
+  </i>
   if (leaf) icon = ''
   if (object && empty) icon = ''
   if (loading) icon = <i className="material-icons md-11">autorenew</i>
 
-  return (<a href="#" className={classNames.join(' ')} onClick={handleToggleTree}><span>{icon}</span></a>)
+  return (
+    <a
+      href="#"
+      className={classNames.join(' ')}
+      onClick={handleToggleTree}>
+      <span>{icon}</span>
+    </a>
+  )
 }
 
-const Icon = ({url, icon, handleNodeSelected}) => <a href={url} className={`browserIcon ${icon}`} onClick={handleNodeSelected}></a>
+const Icon = ({url, icon, handleNodeSelected}) => <a
+  href={url}
+  className={`browserIcon ${icon}`}
+  onClick={handleNodeSelected}>
+</a>
 
-const Label = ({url, label, handleNodeSelected}) => <a href={url} className="browserLabel" onClick={handleNodeSelected}>{label}</a>
+const Label = ({url, label, handleNodeSelected}) => <a
+  href={url}
+  className="browserLabel"
+  onClick={handleNodeSelected}>
+  {label}
+</a>
 
-const Tree = (props) => <div style={props.style} className={`treeNode${props.selected ? ' selected' : ''}`}>
+const Tree = (props) => <div
+  style={props.style}
+  className={`treeNode${props.selected ? ' selected' : ''}`}>
   {steps(props)}
   <Expand {...props} />
   <Icon {...props} />
@@ -133,13 +175,17 @@ class App extends Component {
     const ids = this.state.remote_ids[props.key] || []
     if (ids.length) props.label = `${props.label} (${ids.length})`
 
-    list.push({ loading: this.state.loading[props.key], leaf: is_empty(this.state, props.key), ...props })
+    list.push({
+      loading: this.state.loading[props.key],
+      leaf: is_empty(this.state, props.key),
+      ...props
+    })
 
     if (!props.expanded) return
 
     ids.forEach( (id, i) => {
       const item = this.state.remote_data[props.key][id]
-      const ancestors = props.ancestors.concat([item[config.item_label_field]])
+      const ancestors = [...props.ancestors, item[config.item_label_field]]
       const path = ancestors.join('/')
 
       this.dbCollection({
@@ -151,10 +197,16 @@ class App extends Component {
         label: item[config.item_label_field],
         expanded: this.state.expanded[path],
         selected: this.state.selected === path,
-        handleToggleTree: (e) => { e.preventDefault(); this.handleToggleObject(path) },
+        handleToggleTree: (e) => {
+          e.preventDefault()
+          this.handleToggleObject(path)
+        },
         is_last: props.is_last.concat([ids.length - 1 === i]),
         collections: Collections[config.name] || [],
-        handleNodeSelected: (e) => { e.preventDefault(); this.handleNodeSelected(path)}
+        handleNodeSelected: (e) => {
+          e.preventDefault()
+          this.handleNodeSelected(path)
+        }
       })
     })
   }
@@ -164,7 +216,7 @@ class App extends Component {
     if (!props.expanded) return
 
     collections.forEach( (collection, i) => {
-      const ancestors = props.ancestors.concat([collection.name])
+      const ancestors = [...props.ancestors, collection.name]
       const path = ancestors.join('/')
 
       this.dbObject({
@@ -176,10 +228,16 @@ class App extends Component {
         label: collection.label,
         expanded: this.state.expanded[path],
         selected: this.state.selected === path,
-        handleToggleTree: (e) => { e.preventDefault(); this.handleToggleCollection(ancestors, collection.item_label_field) },
+        handleToggleTree: (e) => {
+          e.preventDefault();
+          this.handleToggleCollection(ancestors, collection.item_label_field)
+        },
         is_last: props.is_last.concat([collections.length - 1 === i]),
         config: collection,
-        handleNodeSelected: (e) => { e.preventDefault(); this.handleNodeSelected(path)}
+        handleNodeSelected: (e) => {
+          e.preventDefault();
+          this.handleNodeSelected(path)
+        }
       })
     })
   }
@@ -203,7 +261,10 @@ class App extends Component {
         handleToggleTree: () => this.handleToggleObject(id),
         is_last: [ids.length - 1 === i],
         collections: Collections.servers,
-        handleNodeSelected: (e) => { e.preventDefault(); this.handleNodeSelected(id)}
+        handleNodeSelected: (e) => {
+          e.preventDefault()
+          this.handleNodeSelected(id)
+        }
       }
 
       this.dbCollection({list, ...props})
@@ -218,7 +279,10 @@ class App extends Component {
                 rowCount={list.length}
                 height={height}
                 rowHeight={21}
-                rowRenderer={({ index, style }) => <Tree style={style} {...list[index]} />}
+                rowRenderer={({ index, style }) => <Tree
+                  style={style}
+                  {...list[index]}
+                />}
                 width={width} />
             )}
           </AutoSizer>
