@@ -1,5 +1,8 @@
 import React, { Component } from 'react'
 import fetch from 'isomorphic-fetch'
+import SplitPane from 'react-split-pane'
+import { AutoSizer, List } from 'react-virtualized'
+import 'react-virtualized/styles.css'
 import './App.css'
 import Collections from './Collections'
 
@@ -35,19 +38,12 @@ const Icon = ({url, icon, handleNodeSelected}) => <a href={url} className={`brow
 
 const Label = ({url, label, handleNodeSelected}) => <a href={url} className="browserLabel" onClick={handleNodeSelected}>{label}</a>
 
-const Tree = (props) => {
-  return (
-    <div>
-      <div className={`treeNode${props.selected ? ' selected' : ''}`}>
-        {steps(props)}
-        <Expand {...props} />
-        <Icon {...props} />
-        <Label {...props} />
-      </div>
-      {props.expanded ? props.children : null}
-    </div>
-  )
-}
+const Tree = (props) => <div style={props.style} className={`treeNode${props.selected ? ' selected' : ''}`}>
+  {steps(props)}
+  <Expand {...props} />
+  <Icon {...props} />
+  <Label {...props} />
+</div>
 
 class App extends Component {
   constructor() {
@@ -73,35 +69,35 @@ class App extends Component {
 
     return '/' + url.map(u => encodeURIComponent(u)).join('/')
   }
-  handleNodeSelected = (canonical) => {
-    this.setState({ selected: canonical })
+  handleNodeSelected = (path) => {
+    this.setState({ selected: path })
   }
-  handleToggleObject = (canonical) => {
+  handleToggleObject = (path) => {
     let expanded = {...this.state.expanded}
 
-    expanded[canonical] = !expanded[canonical]
+    expanded[path] = !expanded[path]
     this.setState({ expanded })
   }
   handleToggleCollection = (ancestors, remote_key_field) => {
-    const canonical = ancestors.join('/')
+    const path = ancestors.join('/')
     let expanded = {...this.state.expanded}
     let remote_ids = {...this.state.remote_ids}
     let remote_data = {...this.state.remote_data}
     let loading = {...this.state.loading}
 
-    expanded[canonical] = !expanded[canonical]
+    expanded[path] = !expanded[path]
 
-    if (!expanded[canonical]) {
+    if (!expanded[path]) {
       this.setState({ expanded })
       return
     }
 
-    if (remote_ids[canonical]) {
+    if (remote_ids[path]) {
       this.setState({ expanded })
       return
     }
 
-    loading[canonical] = true
+    loading[path] = true
     this.setState({ loading, expanded })
 
     fetch('/api' + this.url_for(ancestors))
@@ -111,9 +107,9 @@ class App extends Component {
         let data = {}
         json.forEach(item => { data[item[remote_key_field]] = item })
 
-        remote_ids[canonical] = ids
-        remote_data[canonical] = data
-        loading[canonical] = false
+        remote_ids[path] = ids
+        remote_data[path] = data
+        loading[path] = false
 
         this.setState({ expanded, remote_ids, remote_data, loading })
       })
@@ -133,83 +129,102 @@ class App extends Component {
         })
       })
   }
-  renderObject = ({config, ...props}) => {
+  dbObject = ({list, config, ...props}) => {
     const ids = this.state.remote_ids[props.key] || []
     if (ids.length) props.label = `${props.label} (${ids.length})`
 
-    return (
-      <Tree {...props} loading={this.state.loading[props.key]} leaf={is_empty(this.state, props.key)}>
-        {ids.map( (id, i) => {
-          const item = this.state.remote_data[props.key][id]
-          const ancestors = props.ancestors.concat([item[config.item_label_field]])
-          const canonical = ancestors.join('/')
+    list.push({ loading: this.state.loading[props.key], leaf: is_empty(this.state, props.key), ...props })
 
-          return this.renderCollection({
-            ancestors,
-            key: canonical,
-            url: this.url_for(ancestors),
-            icon: config.item_icon(item),
-            label: item[config.item_label_field],
-            expanded: this.state.expanded[canonical],
-            selected: this.state.selected === canonical,
-            handleToggleTree: (e) => { e.preventDefault(); this.handleToggleObject(canonical) },
-            is_last: props.is_last.concat([ids.length - 1 === i]),
-            collections: Collections[config.name] || [],
-            handleNodeSelected: (e) => { e.preventDefault(); this.handleNodeSelected(canonical)}
-          })
-        })}
-      </Tree>
-    )
+    if (!props.expanded) return
+
+    ids.forEach( (id, i) => {
+      const item = this.state.remote_data[props.key][id]
+      const ancestors = props.ancestors.concat([item[config.item_label_field]])
+      const path = ancestors.join('/')
+
+      this.dbCollection({
+        list,
+        ancestors,
+        key: path,
+        url: this.url_for(ancestors),
+        icon: config.item_icon(item),
+        label: item[config.item_label_field],
+        expanded: this.state.expanded[path],
+        selected: this.state.selected === path,
+        handleToggleTree: (e) => { e.preventDefault(); this.handleToggleObject(path) },
+        is_last: props.is_last.concat([ids.length - 1 === i]),
+        collections: Collections[config.name] || [],
+        handleNodeSelected: (e) => { e.preventDefault(); this.handleNodeSelected(path)}
+      })
+    })
   }
-  renderCollection = ({collections, ...props}) => {
-    return (
-      <Tree leaf={!collections.length} {...props}>
-        {collections.map( (collection, i) => {
-          const ancestors = props.ancestors.concat([collection.name])
-          const canonical = ancestors.join('/')
+  dbCollection = ({list, collections, ...props}) => {
+    list.push({ leaf: !collections.length, ...props })
 
-          return this.renderObject({
-            ancestors,
-            key: canonical,
-            url: this.url_for(ancestors),
-            icon: collection.name,
-            label: collection.label,
-            expanded: this.state.expanded[canonical],
-            selected: this.state.selected === canonical,
-            handleToggleTree: (e) => { e.preventDefault(); this.handleToggleCollection(ancestors, collection.item_label_field) },
-            is_last: props.is_last.concat([collections.length - 1 === i]),
-            config: collection,
-            handleNodeSelected: (e) => { e.preventDefault(); this.handleNodeSelected(canonical)}
-          })
-        })}
-      </Tree>
-    )
+    if (!props.expanded) return
+
+    collections.forEach( (collection, i) => {
+      const ancestors = props.ancestors.concat([collection.name])
+      const path = ancestors.join('/')
+
+      this.dbObject({
+        list,
+        ancestors,
+        key: path,
+        url: this.url_for(ancestors),
+        icon: collection.name,
+        label: collection.label,
+        expanded: this.state.expanded[path],
+        selected: this.state.selected === path,
+        handleToggleTree: (e) => { e.preventDefault(); this.handleToggleCollection(ancestors, collection.item_label_field) },
+        is_last: props.is_last.concat([collections.length - 1 === i]),
+        config: collection,
+        handleNodeSelected: (e) => { e.preventDefault(); this.handleNodeSelected(path)}
+      })
+    })
   }
   render() {
     if (this.state.loading.servers) return <div>Loading...</div>
 
     const ids = this.state.remote_ids.servers
+    let list = [];
+
+    ids.forEach( (id, i) => {
+      const server = this.state.remote_data.servers[id]
+
+      let props = {
+        key: this.url_for([id]),
+        ancestors: [id],
+        url: this.url_for([id]),
+        icon: 'server',
+        label: `${server.name} (${server.host}:${server.port})`,
+        expanded: this.state.expanded[id],
+        selected: this.state.selected === id,
+        handleToggleTree: () => this.handleToggleObject(id),
+        is_last: [ids.length - 1 === i],
+        collections: Collections.servers,
+        handleNodeSelected: (e) => { e.preventDefault(); this.handleNodeSelected(id)}
+      }
+
+      this.dbCollection({list, ...props})
+    })
 
     return (
-      <div className="Browser">
-        {ids.map( (id,i) => {
-          const server = this.state.remote_data.servers[id]
-
-          return this.renderCollection({
-            key: this.url_for([id]),
-            ancestors: [id],
-            url: this.url_for([id]),
-            icon: 'server',
-            label: `${server.name} (${server.host}:${server.port})`,
-            expanded: this.state.expanded[id],
-            selected: this.state.selected === id,
-            handleToggleTree: () => this.handleToggleObject(id),
-            is_last: [ids.length - 1 === i],
-            collections: Collections.servers,
-            handleNodeSelected: (e) => { e.preventDefault(); this.handleNodeSelected(id)}
-          })
-        })}
-      </div>
+      <SplitPane split="vertical" minSize={50} defaultSize={300}>
+        <div className="Browser">
+          <AutoSizer>
+            {({ height, width }) => (
+              <List
+                rowCount={list.length}
+                height={height}
+                rowHeight={21}
+                rowRenderer={({ index, style }) => <Tree style={style} {...list[index]} />}
+                width={width} />
+            )}
+          </AutoSizer>
+        </div>
+        <div>Content...</div>
+      </SplitPane>
     )
   }
 }
