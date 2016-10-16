@@ -2,7 +2,7 @@ Under active development, not ready for use.
 
 Inspired by [PgAdmin](https://ww.pgadmin.org) and [psql](https://www.postgresql.org/docs/9.6/static/app-psql.html)
 
-<iframe width="560" height="315" src="//sendvid.com/embed/lo0wjnl9" frameborder="0" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://sendvid.com/embed/lo0wjnl9" frameborder="0" allowfullscreen></iframe>
 
 ## User Guide
 
