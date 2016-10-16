@@ -23,9 +23,22 @@ const is_empty = (state, key) => {
   )
 }
 
+const treeIcon = (expanded, leaf, object, empty, loading) => {
+  if (loading) return <i className="material-icons md-11">autorenew</i>
+
+  if (object && empty) return '';
+  if (leaf) return '';
+
+  return <i
+    className="material-icons md-11">
+    {expanded ? 'remove' : 'add'}
+  </i>
+}
+
 const steps = ({is_last}) => is_last.slice(0, -1).map((is_last,i) => <div
     key={i}
-    className={ is_last ? 'verticalLine last' : "verticalLine" }>
+    className={['verticalLine', is_last ? 'last' : ''].join(' ')}
+  >
   </div>
 )
 
@@ -44,28 +57,19 @@ const Expand = ({
   ]
   if (loading) classNames.push('loading')
   if (leaf) classNames.push('leaf')
-
   if (!leaf) classNames.push(expanded ? 'dirtree_minus' : 'dirtree_plus')
-
-  let icon = <i
-    className="material-icons md-11">
-    {expanded ? 'remove' : 'add'}
-  </i>
-  if (leaf) icon = ''
-  if (object && empty) icon = ''
-  if (loading) icon = <i className="material-icons md-11">autorenew</i>
 
   return (
     <a
       href="#"
       className={classNames.join(' ')}
       onClick={handleToggleTree}>
-      <span>{icon}</span>
+      <span>{treeIcon(expanded, leaf, object, empty, loading)}</span>
     </a>
   )
 }
 
-const Icon = ({url, icon, handleNodeSelected}) => <a
+const PGIcon = ({url, icon, handleNodeSelected}) => <a
   href={url}
   className={`browserIcon ${icon}`}
   onClick={handleNodeSelected}>
@@ -79,11 +83,12 @@ const Label = ({url, label, handleNodeSelected}) => <a
 </a>
 
 const Tree = (props) => <div
-  style={props.style}
-  className={`treeNode${props.selected ? ' selected' : ''}`}>
+    style={props.style}
+    className={['treeNode', props.selected ? 'selected' : ''].join(' ')}
+  >
   {steps(props)}
   <Expand {...props} />
-  <Icon {...props} />
+  <PGIcon {...props} />
   <Label {...props} />
 </div>
 
@@ -101,15 +106,14 @@ class App extends Component {
   }
   url_for = ([server_id, ...rest]) => {
     const {username,host,port,db} = this.state.remote_data.servers[server_id]
-    let url = [
+
+    return '/' + [
       username,
       host,
       port,
       db,
       ...rest
-    ]
-
-    return '/' + url.map(u => encodeURIComponent(u)).join('/')
+    ].map(u => encodeURIComponent(u)).join('/')
   }
   handleNodeSelected = (path) => {
     this.setState({ selected: path })
