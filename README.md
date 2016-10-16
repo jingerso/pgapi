@@ -13,7 +13,7 @@ $ git clone git@github.com:jingerso/pgchamp.git
 $ cd pgchamp
 ````
 
-Install PG Champ
+Install Dependancies
 ````sh
 $ npm i && cd client && npm i
 ````
@@ -34,6 +34,39 @@ Open [http://localhost:3000](http://localhost:3000) in your browser. The client 
 The client is based on [React Create App](https://github.com/facebookincubator/create-react-app). It has extensive documentation and support [here](https://github.com/facebookincubator/create-react-app).
 
 Help with linting: [Displaying Lint Output in the Editor](https://github.com/facebookincubator/create-react-app/blob/master/packages/react-scripts/template/README.md#displaying-lint-output-in-the-editor)
+
+## Configuring Server Connections
+
+````sh
+$ cd pgchamp
+$ touch servers.json
+````
+
+servers.json has the following format:
+
+````json
+[
+  {
+    "name": "Server #1",
+    "host": "localhost",
+    "port": "5432",
+    "username": "postgres",
+    "password": ""
+  },
+  {
+    "name": "Server #1",
+    "host": "localhost",
+    "port": "5432",
+    "username": "postgres",
+    "password": ""
+  }
+]
+````
+
+The API server will require a restart after modifying servers.json:
+````sh
+$ ./node_modules/babel-cli/bin/babel-node.js src/server.js
+````
 
 ## Prior Art
 
