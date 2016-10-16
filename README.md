@@ -1,5 +1,6 @@
-# PG Champ
-Modern Admin and API for Postgres. Under active development, not ready for use. Inspired by [PgAdmin](https://ww.pgadmin.org) and [psql](https://www.postgresql.org/docs/9.6/static/app-psql.html)
+Under active development, not ready for use.
+
+Inspired by [PgAdmin](https://ww.pgadmin.org) and [psql](https://www.postgresql.org/docs/9.6/static/app-psql.html)
 
 <img src="https://raw.githubusercontent.com/jingerso/pgchamp/master/browser.png" />
 
