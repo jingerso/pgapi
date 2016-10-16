@@ -1,6 +1,6 @@
 # PG Champ
 Modern Admin and API for Postgres
-
+<img src="https://raw.githubusercontent.com/jingerso/pgchamp/master/browser.png" />
 ## Developer Install
 
 Install the latest [node](https://nodejs.org/en/)
