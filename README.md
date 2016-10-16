@@ -2,7 +2,12 @@ Under active development, not ready for use.
 
 Inspired by [PgAdmin](https://ww.pgadmin.org) and [psql](https://www.postgresql.org/docs/9.6/static/app-psql.html)
 
-<img src="https://raw.githubusercontent.com/jingerso/pgchamp/master/browser.png" />
+<img src="https://raw.githubusercontent.com/jingerso/pgchamp/master/pgchamp720.gif" />
+
+## User Guide
+
+- [Developer Install](https://github.com/jingerso/pgchamp/#developer-install)
+- [Configuring Server Connections](https://github.com/jingerso/pgchamp/#configuring-server-connections)
 
 ## Developer Install
 
@@ -54,7 +59,7 @@ servers.json has the following format:
     "password": ""
   },
   {
-    "name": "Server #1",
+    "name": "Server #2",
     "host": "localhost",
     "port": "5432",
     "username": "postgres",
