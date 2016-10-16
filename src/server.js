@@ -17,7 +17,7 @@ const query = (params) => {
   return server(params.database ? params.database : params.db)
 }
 
-app.get('/api/servers', async (req, res) => {
+app.get('/api/servers', (req, res) => {
   const slurped = fs.readFileSync('servers.json')
   const list = JSON.parse(slurped)
 
