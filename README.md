@@ -6,8 +6,8 @@ Inspired by [PgAdmin](https://ww.pgadmin.org) and [psql](https://www.postgresql.
 
 ## User Guide
 
-- [Developer Install](https://github.com/jingerso/pgchamp/#developer-install)
-- [Configuring Server Connections](https://github.com/jingerso/pgchamp/#configuring-server-connections)
+- [Developer Install](https://github.com/jingerso/pgapi/#developer-install)
+- [Configuring Server Connections](https://github.com/jingerso/pgapi/#configuring-server-connections)
 
 ## Developer Install
 
@@ -18,8 +18,8 @@ Inspired by [PgAdmin](https://ww.pgadmin.org) and [psql](https://www.postgresql.
 Clone the repository
 
 ````sh
-$ git clone git@github.com:jingerso/pgchamp.git
-$ cd pgchamp
+$ git clone git@github.com:jingerso/pgapi.git
+$ cd pgapi
 ````
 
 Install Dependancies
@@ -47,7 +47,7 @@ Help with linting: [Displaying Lint Output in the Editor](https://github.com/fac
 ## Configuring Server Connections
 
 ````sh
-$ cd pgchamp
+$ cd pgapi
 $ touch servers.json
 ````
 
