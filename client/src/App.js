@@ -2,6 +2,7 @@ import React, { Component } from 'react'
 import fetch from 'isomorphic-fetch'
 import SplitPane from 'react-split-pane'
 import { AutoSizer, List } from 'react-virtualized'
+import { Match, Miss, Link } from 'react-router'
 import 'react-virtualized/styles.css'
 import './App.css'
 import Collections from './Collections'
@@ -69,11 +70,10 @@ const Expand = ({
   )
 }
 
-const PGIcon = ({url, icon, handleNodeSelected}) => <a
-  href={url}
+const PGIcon = ({url, icon, handleNodeSelected}) => <Link
+  to={url}
   className={`browserIcon ${icon}`}
-  onClick={handleNodeSelected}>
-</a>
+/>
 
 const Label = ({url, label, handleNodeSelected}) => <a
   href={url}
@@ -91,6 +91,12 @@ const Tree = (props) => <div
   <PGIcon {...props} />
   <Label {...props} />
 </div>
+
+const Collection = ({params, ...collection}) => {
+  return (
+    <div>{collection.name}</div>
+  )
+}
 
 class App extends Component {
   constructor() {
@@ -274,6 +280,16 @@ class App extends Component {
       this.dbCollection({list, ...props})
     })
 
+    let routes = []
+    Collections.servers.forEach( (collection) => {
+      routes.push(<Match
+        key={collection.name}
+        exactly
+        pattern={`/:username/:host/:port/:db/${collection.name}`}
+        component={({params}) => <Collection params={params} {...collection}/>}
+      />)
+    })
+
     return (
       <SplitPane split="vertical" minSize={50} defaultSize={300}>
         <div className="Browser">
@@ -291,7 +307,12 @@ class App extends Component {
             )}
           </AutoSizer>
         </div>
-        <div>Content...</div>
+        <div>
+          <Match exactly pattern="/" render={() => <div>Servers</div>} />
+          <Match exactly pattern="/:username/:host/:port/:db" component={() => <div>Server</div>} />
+          {routes.map(route => route)}
+          <Miss render={() => <h1>Not Found</h1>} />
+        </div>
       </SplitPane>
     )
   }
