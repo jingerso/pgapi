@@ -70,15 +70,15 @@ const Expand = ({
   )
 }
 
-const PGIcon = ({url, icon, handleNodeSelected}) => <Link
+const PGIcon = ({url, icon }) => <Link
   to={url}
   className={`browserIcon ${icon}`}
 />
 
-const Label = ({url, label, handleNodeSelected}) => <a
+const Label = ({url, label }) => <a
   href={url}
   className="browserLabel"
-  onClick={handleNodeSelected}>
+>
   {label}
 </a>
 
@@ -92,22 +92,24 @@ const Tree = (props) => <div
   <Label {...props} />
 </div>
 
-const Collection = ({params, ...collection}) => {
+const Collection = ({params, pathname}) => {
   return (
-    <div>{collection.name}</div>
+    <div>{pathname}</div>
   )
 }
 
 class App extends Component {
-  constructor() {
-    super()
+  constructor(props) {
+    super(props)
+
+    console.log(props)
 
     this.state = {
       loading: { servers: true },
       expanded: {},
       remote_ids: {},
       remote_data: {},
-      selected: null
+      selected: props ? props.location.pathname : null
     }
   }
   url_for = ([server_id, ...rest]) => {
@@ -121,17 +123,13 @@ class App extends Component {
       ...rest
     ].map(u => encodeURIComponent(u)).join('/')
   }
-  handleNodeSelected = (path) => {
-    this.setState({ selected: path })
-  }
   handleToggleObject = (path) => {
     let expanded = {...this.state.expanded}
 
     expanded[path] = !expanded[path]
     this.setState({ expanded })
   }
-  handleToggleCollection = (ancestors, remote_key_field) => {
-    const path = ancestors.join('/')
+  handleToggleCollection = (path, remote_key_field) => {
     let expanded = {...this.state.expanded}
     let remote_ids = {...this.state.remote_ids}
     let remote_data = {...this.state.remote_data}
@@ -152,7 +150,7 @@ class App extends Component {
     loading[path] = true
     this.setState({ loading, expanded })
 
-    fetch('/api' + this.url_for(ancestors))
+    fetch('/api' + path)
       .then(response => response.json())
       .then(json => {
         let ids = json.map(item => item[remote_key_field])
@@ -164,21 +162,6 @@ class App extends Component {
         loading[path] = false
 
         this.setState({ expanded, remote_ids, remote_data, loading })
-      })
-  }
-  componentDidMount() {
-    fetch('/api/servers')
-      .then(response => response.json())
-      .then(json => {
-        let ids = json.map(server_path)
-        let data = {}
-        json.forEach(server => { data[server_path(server)] = server })
-
-        this.setState({
-          remote_ids: { servers: ids },
-          remote_data: { servers: data },
-          loading: { servers: false }
-        })
       })
   }
   dbObject = ({list, config, ...props}) => {
@@ -196,27 +179,23 @@ class App extends Component {
     ids.forEach( (id, i) => {
       const item = this.state.remote_data[props.key][id]
       const ancestors = [...props.ancestors, item[config.item_label_field]]
-      const path = ancestors.join('/')
+      const url = this.url_for(ancestors)
 
       this.dbCollection({
         list,
         ancestors,
-        key: path,
-        url: this.url_for(ancestors),
+        url,
+        key: url,
         icon: config.item_icon(item),
         label: item[config.item_label_field],
-        expanded: this.state.expanded[path],
-        selected: this.state.selected === path,
+        expanded: this.state.expanded[url],
+        selected: this.state.selected === url,
         handleToggleTree: (e) => {
           e.preventDefault()
-          this.handleToggleObject(path)
+          this.handleToggleObject(url)
         },
         is_last: props.is_last.concat([ids.length - 1 === i]),
-        collections: Collections[config.name] || [],
-        handleNodeSelected: (e) => {
-          e.preventDefault()
-          this.handleNodeSelected(path)
-        }
+        collections: Collections[config.name] || []
       })
     })
   }
@@ -227,29 +206,45 @@ class App extends Component {
 
     collections.forEach( (collection, i) => {
       const ancestors = [...props.ancestors, collection.name]
-      const path = ancestors.join('/')
+      const url = this.url_for(ancestors)
 
       this.dbObject({
         list,
         ancestors,
-        key: path,
-        url: this.url_for(ancestors),
+        url,
+        key: url,
         icon: collection.name,
         label: collection.label,
-        expanded: this.state.expanded[path],
-        selected: this.state.selected === path,
+        expanded: this.state.expanded[url],
+        selected: this.state.selected === url,
         handleToggleTree: (e) => {
           e.preventDefault();
-          this.handleToggleCollection(ancestors, collection.item_label_field)
+          this.handleToggleCollection(url, collection.item_label_field)
         },
         is_last: props.is_last.concat([collections.length - 1 === i]),
-        config: collection,
-        handleNodeSelected: (e) => {
-          e.preventDefault();
-          this.handleNodeSelected(path)
-        }
+        config: collection
       })
     })
+  }
+  componentDidMount() {
+    fetch('/api/servers')
+      .then(response => response.json())
+      .then(json => {
+        let ids = json.map(server_path)
+        let data = {}
+        json.forEach(server => { data[server_path(server)] = server })
+
+        this.setState({
+          remote_ids: { servers: ids },
+          remote_data: { servers: data },
+          loading: { servers: false }
+        })
+      })
+  }
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.location.pathname === this.state.selected) return;
+
+    this.setState({ selected: nextProps.location.pathname })
   }
   render() {
     if (this.state.loading.servers) return <div>Loading...</div>
@@ -259,35 +254,22 @@ class App extends Component {
 
     ids.forEach( (id, i) => {
       const server = this.state.remote_data.servers[id]
+      const path = this.url_for([id])
 
       let props = {
-        key: this.url_for([id]),
+        key: path,
         ancestors: [id],
-        url: this.url_for([id]),
+        url: path,
         icon: 'server',
         label: `${server.name} (${server.host}:${server.port})`,
         expanded: this.state.expanded[id],
-        selected: this.state.selected === id,
+        selected: this.state.selected === '/' + id,
         handleToggleTree: () => this.handleToggleObject(id),
         is_last: [ids.length - 1 === i],
-        collections: Collections.servers,
-        handleNodeSelected: (e) => {
-          e.preventDefault()
-          this.handleNodeSelected(id)
-        }
+        collections: Collections.servers
       }
 
       this.dbCollection({list, ...props})
-    })
-
-    let routes = []
-    Collections.servers.forEach( (collection) => {
-      routes.push(<Match
-        key={collection.name}
-        exactly
-        pattern={`/:username/:host/:port/:db/${collection.name}`}
-        component={({params}) => <Collection params={params} {...collection}/>}
-      />)
     })
 
     return (
@@ -309,8 +291,13 @@ class App extends Component {
         </div>
         <div>
           <Match exactly pattern="/" render={() => <div>Servers</div>} />
-          <Match exactly pattern="/:username/:host/:port/:db" component={() => <div>Server</div>} />
-          {routes.map(route => route)}
+          <Match exactly pattern="/:username/:host/:port/:db" component={({params}) => <div>{params.host}</div>} />
+          <Match exactly pattern="/:username/:host/:port/:db/databases" component={Collection} />
+          <Match exactly pattern="/:username/:host/:port/:db/databases/:database" component={Collection} />
+          <Match exactly pattern="/:username/:host/:port/:db/tablespaces" component={Collection} />
+          <Match exactly pattern="/:username/:host/:port/:db/tablespaces/:tablespace" component={Collection} />
+          <Match exactly pattern="/:username/:host/:port/:db/roles" component={Collection} />
+          <Match exactly pattern="/:username/:host/:port/:db/roles/:role" component={Collection} />
           <Miss render={() => <h1>Not Found</h1>} />
         </div>
       </SplitPane>
