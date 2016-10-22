@@ -3,6 +3,7 @@ import fetch from 'isomorphic-fetch'
 import SplitPane from 'react-split-pane'
 import { AutoSizer, List } from 'react-virtualized'
 import { Match, Miss, Link } from 'react-router'
+import classNames from 'classnames'
 import 'react-virtualized/styles.css'
 import './App.css'
 import Collections from './Collections'
@@ -24,11 +25,10 @@ const is_empty = (state, key) => {
   )
 }
 
-const treeIcon = (expanded, leaf, object, empty, loading) => {
+const treeIcon = (expanded, object, empty, loading) => {
   if (loading) return <i className="material-icons md-11">autorenew</i>
 
   if (object && empty) return '';
-  if (leaf) return '';
 
   return <i
     className="material-icons md-11">
@@ -38,56 +38,62 @@ const treeIcon = (expanded, leaf, object, empty, loading) => {
 
 const steps = ({is_last}) => is_last.slice(0, -1).map((is_last,i) => <div
     key={i}
-    className={['verticalLine', is_last ? 'last' : ''].join(' ')}
+    className={classNames('verticalLine', { last: is_last })}
   >
   </div>
 )
 
-const Expand = ({
+const Branch = ({
   is_last,
-  leaf,
   empty,
   expanded,
   loading,
   handleToggleTree,
   object
 }) => {
-  let classNames = [
+  let expandClass = classNames(
     'dirtree',
-    is_last[is_last.length - 1] ? 'dirtree_elbow' : 'dirtree_tee'
-  ]
-  if (loading) classNames.push('loading')
-  if (leaf) classNames.push('leaf')
-  if (!leaf) classNames.push(expanded ? 'dirtree_minus' : 'dirtree_plus')
-
+    is_last[is_last.length - 1] ? 'dirtree_elbow' : 'dirtree_tee',
+    {
+      loading,
+      dirtree_minus: expanded,
+      dirtree_plus: !expanded,
+    }
+  )
   return (
     <a
       href="#"
-      className={classNames.join(' ')}
+      className={expandClass}
       onClick={handleToggleTree}>
-      <span>{treeIcon(expanded, leaf, object, empty, loading)}</span>
+      <span>{treeIcon(expanded, object, empty, loading)}</span>
     </a>
   )
 }
 
+const Leaf = ({ is_last, object }) => <a
+  className={classNames(
+    'dirtree',
+    'leaf',
+    is_last[is_last.length - 1] ? 'dirtree_elbow' : 'dirtree_tee'
+  )}>
+  <span></span>
+</a>
+
 const PGIcon = ({url, icon }) => <Link
   to={url}
-  className={`browserIcon ${icon}`}
+  className={classNames('browserIcon', icon)}
 />
 
-const Label = ({url, label }) => <a
-  href={url}
-  className="browserLabel"
->
+const Label = ({url, label }) => <Link to={url} className="browserLabel">
   {label}
-</a>
+</Link>
 
 const Tree = (props) => <div
     style={props.style}
-    className={['treeNode', props.selected ? 'selected' : ''].join(' ')}
+    className={classNames('treeNode', {selected: props.selected})}
   >
   {steps(props)}
-  <Expand {...props} />
+  {props.leaf ? <Leaf {...props} /> : <Branch {...props} />}
   <PGIcon {...props} />
   <Label {...props} />
 </div>
@@ -101,8 +107,6 @@ const Collection = ({params, pathname}) => {
 class App extends Component {
   constructor(props) {
     super(props)
-
-    console.log(props)
 
     this.state = {
       loading: { servers: true },
