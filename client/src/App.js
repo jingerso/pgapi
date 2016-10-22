@@ -70,7 +70,7 @@ const Branch = ({
   )
 }
 
-const Leaf = ({ is_last, object }) => <a
+const Leaf = ({ is_last }) => <a
   className={classNames(
     'dirtree',
     'leaf',
