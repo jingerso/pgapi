@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import fetch from 'isomorphic-fetch'
+import localForage from 'localforage'
 import SplitPane from 'react-split-pane'
 import { AutoSizer, List } from 'react-virtualized'
 import { Match, Miss } from 'react-router'
@@ -11,9 +12,8 @@ import Tree from './Browser.jsx'
 const server_path = ({
   host,
   port,
-  username,
-  db
-}) => `${username}/${host}/${port}/${db}`
+  username
+}) => `${username}/${host}/${port}`
 
 const is_empty = (state, key) => {
   const ids = state.remote_ids[key] || []
@@ -31,39 +31,42 @@ const Collection = ({params, pathname}) => {
   )
 }
 
-const getLocal = key => {
-  const serialized = localStorage.getItem(key)
-
-  if (!serialized) return {}
-
-  return JSON.parse(serialized)
-}
-
-const setLocal = (key, value) => {
-  localStorage.setItem(key, JSON.stringify(value))
-}
-
 class App extends Component {
   constructor(props) {
     super(props)
 
-    console.log(localStorage)
     this.state = {
       loading: { servers: true },
-      expanded: getLocal('expanded'),
-      remote_ids: getLocal('remote_ids'),
-      remote_data: getLocal('remote_data'),
+      expanded: {},
+      remote_ids: {},
+      remote_data: {},
       selected: props ? props.location.pathname : null
     }
+
+    this.initFromLocalForage()
+  }
+  async initFromLocalForage(props) {
+    const [expanded, remote_ids, remote_data, splitPos] = await Promise.all([
+      localForage.getItem('expanded'),
+      localForage.getItem('remote_ids'),
+      localForage.getItem('remote_data'),
+      localForage.getItem('splitPos')
+    ])
+
+    this.setState({
+      splitPos,
+      expanded: expanded || {},
+      remote_ids: remote_ids || {},
+      remote_data: remote_data || {}
+    })
   }
   url_for = ([server_id, ...rest]) => {
-    const {username,host,port,db} = this.state.remote_data.servers[server_id]
+    const {username,host,port} = this.state.remote_data.servers[server_id]
 
     return '/' + [
       username,
       host,
       port,
-      db,
       ...rest
     ].map(u => encodeURIComponent(u)).join('/')
   }
@@ -173,13 +176,19 @@ class App extends Component {
   setState(args) {
     super.setState(args)
 
+    let ops = []
     const {expanded, remote_ids, remote_data} = args
 
-    if (expanded) setLocal('expanded', expanded)
-    if (remote_ids) setLocal('remote_ids', remote_ids)
-    if (remote_data) setLocal('remote_data', remote_data)
+    if (expanded) ops.push(localForage.setItem('expanded', expanded))
+    if (remote_ids) ops.push(localForage.setItem('remote_ids', remote_ids))
+    if (remote_data) ops.push(localForage.setItem('remote_data', remote_data))
+
+    if (ops.length) Promise.all(ops)
   }
   componentDidMount() {
+    let remote_ids = {...this.state.remote_ids}
+    let remote_data = {...this.state.remote_data}
+
     fetch('/api/servers')
       .then(response => response.json())
       .then(json => {
@@ -187,11 +196,17 @@ class App extends Component {
         let data = {}
         json.forEach(server => { data[server_path(server)] = server })
 
+        remote_ids.servers = ids
+        remote_data.servers = data
+
         this.setState({
-          remote_ids: { servers: ids },
-          remote_data: { servers: data },
+          remote_ids,
+          remote_data,
           loading: { servers: false }
         })
+
+        // scroll to the selected node when the component is first instantiated
+        this._scrollToSelected = true
       })
   }
   componentWillReceiveProps(nextProps) {
@@ -204,6 +219,7 @@ class App extends Component {
 
     const ids = this.state.remote_ids.servers
     let list = [];
+    let scrollToIndex
 
     ids.forEach( (id, i) => {
       const server = this.state.remote_data.servers[id]
@@ -225,8 +241,18 @@ class App extends Component {
       this.dbCollection({list, ...props})
     })
 
+    if (this._scrollToSelected) {
+      scrollToIndex = list.findIndex(item => item.selected)
+      this._scrollToSelected = false
+    }
+
     return (
-      <SplitPane split="vertical" minSize={50} defaultSize={300}>
+      <SplitPane
+        split="vertical"
+        minSize={50}
+        defaultSize={this.state.splitPos || 300}
+        onChange={size => localForage.setItem('splitPos', size)}
+      >
         <div className="Browser">
           <AutoSizer>
             {({ height, width }) => (
@@ -234,6 +260,8 @@ class App extends Component {
                 rowCount={list.length}
                 height={height}
                 rowHeight={21}
+                scrollToIndex={scrollToIndex}
+                scrollToAlignment="center"
                 rowRenderer={({ index, style }) => <Tree
                   style={style}
                   {...list[index]}
@@ -244,13 +272,13 @@ class App extends Component {
         </div>
         <div>
           <Match exactly pattern="/" render={() => <div>Servers</div>} />
-          <Match exactly pattern="/:username/:host/:port/:db" component={({params}) => <div>{params.host}</div>} />
-          <Match exactly pattern="/:username/:host/:port/:db/databases" component={Collection} />
-          <Match exactly pattern="/:username/:host/:port/:db/databases/:database" component={Collection} />
-          <Match exactly pattern="/:username/:host/:port/:db/tablespaces" component={Collection} />
-          <Match exactly pattern="/:username/:host/:port/:db/tablespaces/:tablespace" component={Collection} />
-          <Match exactly pattern="/:username/:host/:port/:db/roles" component={Collection} />
-          <Match exactly pattern="/:username/:host/:port/:db/roles/:role" component={Collection} />
+          <Match exactly pattern="/:username/:host/:port" component={({params}) => <div>{params.host}</div>} />
+          <Match exactly pattern="/:username/:host/:port/databases" component={Collection} />
+          <Match exactly pattern="/:username/:host/:port/databases/:database" component={Collection} />
+          <Match exactly pattern="/:username/:host/:port/tablespaces" component={Collection} />
+          <Match exactly pattern="/:username/:host/:port/tablespaces/:tablespace" component={Collection} />
+          <Match exactly pattern="/:username/:host/:port/roles" component={Collection} />
+          <Match exactly pattern="/:username/:host/:port/roles/:role" component={Collection} />
           <Miss render={() => <h1>Not Found</h1>} />
         </div>
       </SplitPane>
