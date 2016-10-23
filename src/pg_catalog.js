@@ -1,33 +1,22 @@
 import express from 'express'
 import fs from 'fs'
-import pg from './pg'
+import pg from './pg_auth'
 
 const router = express.Router()
-
-let server_keys = []
-let server_map = {}
-
-const params_to_db = ({host,port,db,username}) => `${username}@${host}:${port}/${db}`
-
-const query = (params) => {
-  const server = pg(server_map[params_to_db(params)])
-
-  return server(params.database ? params.database : params.db)
-}
 
 router.get('/servers', (req, res) => {
   const slurped = fs.readFileSync('servers.json')
   const list = JSON.parse(slurped)
 
   list.forEach(server => {
-    server_keys.push(params_to_db(server))
-    server_map[params_to_db(server)] = server
+    pg.add(server)
   })
 
-  res.send(list)
+  res.send(list.map(({password, ...rest}) => rest))
 })
 
-const prefix = '/:username/:host/:port/:db'
+const server_prefix = '/:username/:host/:port'
+const db_prefix = `${server_prefix}/databases/:database`
 
 const table = (t, req) => t.one(`
   SELECT c.oid,
@@ -45,8 +34,8 @@ const table = (t, req) => t.one(`
 
 const routes = [
   {
-    path: `${prefix}/databases`,
-    query: req => query(req.params).any(`
+    path: `${server_prefix}/databases`,
+    query: req => pg.query(req.params).any(`
       SELECT
         *
       FROM pg_database
@@ -55,8 +44,8 @@ const routes = [
     `)
   },
   {
-    path: `${prefix}/tablespaces`,
-    query: req => query(req.params).any(`
+    path: `${server_prefix}/tablespaces`,
+    query: req => pg.query(req.params).any(`
       SELECT
         *
       FROM pg_tablespace
@@ -64,8 +53,8 @@ const routes = [
     `)
   },
   {
-    path: `${prefix}/roles`,
-    query: req => query(req.params).any(`
+    path: `${server_prefix}/roles`,
+    query: req => pg.query(req.params).any(`
       SELECT
         *
       FROM pg_roles
@@ -73,8 +62,8 @@ const routes = [
     `)
   },
   {
-    path: `${prefix}/databases/:database/schemas`,
-    query: req => query(req.params).any(`
+    path: `${db_prefix}/schemas`,
+    query: req => pg.query(req.params).any(`
       SELECT
         *
       FROM pg_namespace
@@ -85,14 +74,14 @@ const routes = [
     `)
   },
   {
-    path: `${prefix}/databases/:database/schemas/:schema/tables`,
-    query: req => query(req.params).any(`
+    path: `${db_prefix}/schemas/:schema/tables`,
+    query: req => pg.query(req.params).any(`
       SELECT * FROM pg_tables WHERE schemaname = $/schema/ ORDER BY tablename
     `, { schema: req.params.schema })
   },
   {
-    path: `${prefix}/databases/:database/schemas/:schema/tables/:table/columns`,
-    query: req => query(req.params).task(t => table(t, req)
+    path: `${db_prefix}/schemas/:schema/tables/:table/columns`,
+    query: req => pg.query(req.params).task(t => table(t, req)
       .then(table => t.any(`
         SELECT a.attname,
           pg_catalog.format_type(a.atttypid, a.atttypmod),
@@ -126,8 +115,8 @@ const routes = [
     ))
   },
   {
-    path: `${prefix}/databases/:database/schemas/:schema/tables/:table/indexes`,
-    query: req => query(req.params).task(t => table(t, req)
+    path: `${db_prefix}/schemas/:schema/tables/:table/indexes`,
+    query: req => pg.query(req.params).task(t => table(t, req)
       .then(table => t.any(`
         SELECT
           c2.relname,
@@ -163,8 +152,8 @@ const routes = [
     ))
   },
   {
-    path: `${prefix}/databases/:database/schemas/:schema/tables/:table/constraints`,
-    query: req => query(req.params).task(t => table(t, req)
+    path: `${db_prefix}/schemas/:schema/tables/:table/constraints`,
+    query: req => pg.query(req.params).task(t => table(t, req)
       .then(table => t.any(`
         SELECT
           conname,
