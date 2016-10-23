@@ -11,9 +11,8 @@ import Collections from './Collections'
 const server_path = ({
   host,
   port,
-  username,
-  db
-}) => `${username}/${host}/${port}/${db}`
+  username
+}) => `${username}/${host}/${port}`
 
 const is_empty = (state, key) => {
   const ids = state.remote_ids[key] || []
@@ -117,13 +116,12 @@ class App extends Component {
     }
   }
   url_for = ([server_id, ...rest]) => {
-    const {username,host,port,db} = this.state.remote_data.servers[server_id]
+    const {username,host,port} = this.state.remote_data.servers[server_id]
 
     return '/' + [
       username,
       host,
       port,
-      db,
       ...rest
     ].map(u => encodeURIComponent(u)).join('/')
   }
