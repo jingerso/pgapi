@@ -185,6 +185,29 @@ class App extends Component {
 
     if (ops.length) Promise.all(ops)
   }
+  expandToSelected() {
+    if (!this.state.selected) return
+
+    let requests = []
+    const [username, host, port, ...rest] = this.state.selected.split('/').slice(1)
+
+    if (!rest.length) return
+
+    let expanded = {...this.state.expanded}
+    let remote_ids = {...this.state.remote_ids}
+    let remote_data = {...this.state.remote_data}
+
+    let ancestors = [server_path({host, port, username})]
+
+    rest.forEach((path, i) => {
+      ancestors.push(path)
+      let url = url_for(ancestors)
+
+      expanded[url] = true
+      if (i % 2)
+      console.log(path)
+    })
+  }
   componentDidMount() {
     let remote_ids = {...this.state.remote_ids}
     let remote_data = {...this.state.remote_data}
@@ -205,6 +228,7 @@ class App extends Component {
           loading: { servers: false }
         })
 
+        this.expandToSelected()
         // scroll to the selected node when the component is first instantiated
         this._scrollToSelected = true
       })
