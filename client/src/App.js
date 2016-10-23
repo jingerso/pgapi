@@ -2,17 +2,18 @@ import React, { Component } from 'react'
 import fetch from 'isomorphic-fetch'
 import SplitPane from 'react-split-pane'
 import { AutoSizer, List } from 'react-virtualized'
-import { Match, Miss, Link } from 'react-router'
-import classNames from 'classnames'
+import { Match, Miss } from 'react-router'
 import 'react-virtualized/styles.css'
 import './App.css'
 import Collections from './Collections'
+import Tree from './Browser.jsx'
 
 const server_path = ({
   host,
   port,
-  username
-}) => `${username}/${host}/${port}`
+  username,
+  db
+}) => `${username}/${host}/${port}/${db}`
 
 const is_empty = (state, key) => {
   const ids = state.remote_ids[key] || []
@@ -24,104 +25,45 @@ const is_empty = (state, key) => {
   )
 }
 
-const treeIcon = (expanded, object, empty, loading) => {
-  if (loading) return <i className="material-icons md-11">autorenew</i>
-
-  if (object && empty) return '';
-
-  return <i
-    className="material-icons md-11">
-    {expanded ? 'remove' : 'add'}
-  </i>
-}
-
-const steps = ({is_last}) => is_last.slice(0, -1).map((is_last,i) => <div
-    key={i}
-    className={classNames('verticalLine', { last: is_last })}
-  >
-  </div>
-)
-
-const Branch = ({
-  is_last,
-  empty,
-  expanded,
-  loading,
-  handleToggleTree,
-  object
-}) => {
-  let expandClass = classNames(
-    'dirtree',
-    is_last[is_last.length - 1] ? 'dirtree_elbow' : 'dirtree_tee',
-    {
-      loading,
-      dirtree_minus: expanded,
-      dirtree_plus: !expanded,
-    }
-  )
-  return (
-    <a
-      href="#"
-      className={expandClass}
-      onClick={handleToggleTree}>
-      <span>{treeIcon(expanded, object, empty, loading)}</span>
-    </a>
-  )
-}
-
-const Leaf = ({ is_last }) => <a
-  className={classNames(
-    'dirtree',
-    'leaf',
-    is_last[is_last.length - 1] ? 'dirtree_elbow' : 'dirtree_tee'
-  )}>
-  <span></span>
-</a>
-
-const PGIcon = ({url, icon }) => <Link
-  to={url}
-  className={classNames('browserIcon', icon)}
-/>
-
-const Label = ({url, label }) => <Link to={url} className="browserLabel">
-  {label}
-</Link>
-
-const Tree = (props) => <div
-    style={props.style}
-    className={classNames('treeNode', {selected: props.selected})}
-  >
-  {steps(props)}
-  {props.leaf ? <Leaf {...props} /> : <Branch {...props} />}
-  <PGIcon {...props} />
-  <Label {...props} />
-</div>
-
 const Collection = ({params, pathname}) => {
   return (
     <div>{pathname}</div>
   )
 }
 
+const getLocal = key => {
+  const serialized = localStorage.getItem(key)
+
+  if (!serialized) return {}
+
+  return JSON.parse(serialized)
+}
+
+const setLocal = (key, value) => {
+  localStorage.setItem(key, JSON.stringify(value))
+}
+
 class App extends Component {
   constructor(props) {
     super(props)
 
+    console.log(localStorage)
     this.state = {
       loading: { servers: true },
-      expanded: {},
-      remote_ids: {},
-      remote_data: {},
+      expanded: getLocal('expanded'),
+      remote_ids: getLocal('remote_ids'),
+      remote_data: getLocal('remote_data'),
       selected: props ? props.location.pathname : null
     }
   }
   url_for = ([server_id, ...rest]) => {
-    const {username,host,port} = this.state.remote_data.servers[server_id]
+    const {username,host,port,db} = this.state.remote_data.servers[server_id]
 
     return '/' + [
       username,
       host,
       port,
+      db,
       ...rest
     ].map(u => encodeURIComponent(u)).join('/')
   }
@@ -227,6 +169,15 @@ class App extends Component {
         config: collection
       })
     })
+  }
+  setState(args) {
+    super.setState(args)
+
+    const {expanded, remote_ids, remote_data} = args
+
+    if (expanded) setLocal('expanded', expanded)
+    if (remote_ids) setLocal('remote_ids', remote_ids)
+    if (remote_data) setLocal('remote_data', remote_data)
   }
   componentDidMount() {
     fetch('/api/servers')
