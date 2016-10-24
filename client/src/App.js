@@ -13,7 +13,7 @@ const server_path = ({
   host,
   port,
   username
-}) => `${username}/${host}/${port}`
+}) => `/${username}/${host}/${port}`
 
 const is_empty = (state, key) => {
   const ids = state.remote_ids[key] || []
@@ -40,25 +40,11 @@ class App extends Component {
       expanded: {},
       remote_ids: {},
       remote_data: {},
-      selected: props ? props.location.pathname : null
+      selected: props ? props.location.pathname : null,
+      splitPos: 300
     }
 
-    this.initFromLocalForage()
-  }
-  async initFromLocalForage(props) {
-    const [expanded, remote_ids, remote_data, splitPos] = await Promise.all([
-      localForage.getItem('expanded'),
-      localForage.getItem('remote_ids'),
-      localForage.getItem('remote_data'),
-      localForage.getItem('splitPos')
-    ])
-
-    this.setState({
-      splitPos,
-      expanded: expanded || {},
-      remote_ids: remote_ids || {},
-      remote_data: remote_data || {}
-    })
+    //localForage.clear()
   }
   url_for = ([server_id, ...rest]) => {
     const {username,host,port} = this.state.remote_data.servers[server_id]
@@ -142,7 +128,7 @@ class App extends Component {
           this.handleToggleObject(url)
         },
         is_last: props.is_last.concat([ids.length - 1 === i]),
-        collections: Collections[config.name] || []
+        collections: config.collections || []
       })
     })
   }
@@ -201,12 +187,47 @@ class App extends Component {
 
     rest.forEach((path, i) => {
       ancestors.push(path)
-      let url = url_for(ancestors)
+      let url = this.url_for(ancestors)
 
       expanded[url] = true
-      if (i % 2)
-      console.log(path)
+
+      console.log('%s => %s', path, url)
     })
+  }
+  async restoreSession(state) {
+    let session = await Promise.all([
+      localForage.getItem('expanded'),
+      localForage.getItem('remote_ids'),
+      localForage.getItem('remote_data'),
+      localForage.getItem('splitPos')
+    ]).then(results => {
+      return {
+        expanded: results[0],
+        remote_ids: results[1],
+        remote_data: results[2],
+        splitPos: results[3]
+      }
+    })
+
+    console.log(session)
+
+    if (session.splitPos) state.splitPos = session.splitPos
+    if (session.expanded) state.expanded = session.expanded
+
+    if (session.remote_ids) {
+      Object.keys(session.remote_ids).forEach(id => {
+        if (state.remote_ids.servers[id]) return
+
+        state.remote_ids[id] = session.remote_ids[id]
+        state.remote_data[id] = session.remote_data[id]
+      })
+    }
+
+    // scroll to the selected node when the component is first instantiated
+    this._scrollToSelected = true
+
+    this.setState(state, () => { console.log(this.state)})
+    console.log(this.state)
   }
   componentDidMount() {
     let remote_ids = {...this.state.remote_ids}
@@ -222,15 +243,12 @@ class App extends Component {
         remote_ids.servers = ids
         remote_data.servers = data
 
-        this.setState({
+        this.restoreSession({
           remote_ids,
           remote_data,
+          expanded: {...this.state.expanded},
           loading: { servers: false }
         })
-
-        this.expandToSelected()
-        // scroll to the selected node when the component is first instantiated
-        this._scrollToSelected = true
       })
   }
   componentWillReceiveProps(nextProps) {
