@@ -83,7 +83,7 @@ class App extends Component {
     loading[path] = true
     this.setState({ loading, expanded })
 
-    fetch('/api' + path)
+    return fetch('/api' + path)
       .then(response => response.json())
       .then(json => {
         let ids = json.map(item => item[remote_key_field])
@@ -152,7 +152,7 @@ class App extends Component {
         selected: this.state.selected === url,
         handleToggleTree: (e) => {
           e.preventDefault();
-          this.handleToggleCollection(url, collection.item_label_field)
+          this.handleToggleCollection(url, collection.item_label_field).then()
         },
         is_last: props.is_last.concat([collections.length - 1 === i]),
         config: collection
@@ -171,30 +171,53 @@ class App extends Component {
 
     if (ops.length) Promise.all(ops)
   }
-  expandToSelected() {
-    if (!this.state.selected) return
+  fetchRemote(path, remote_key_field, state) {
+    if (state.remote_ids[path] && state.remote_data[path]) {
+      return Promise.resolve()
+    }
 
-    let requests = []
+    return fetch('/api' + path)
+      .then(response => response.json())
+      .then(json => {
+        let ids = json.map(item => item[remote_key_field])
+        let data = {}
+        json.forEach(item => { data[item[remote_key_field]] = item })
+
+        state.remote_ids[path] = ids
+        state.remote_data[path] = data
+      })
+  }
+  restoreFromSelected(state) {
     const [username, host, port, ...rest] = this.state.selected.split('/').slice(1)
+    const server = server_path({host, port, username})
 
     if (!rest.length) return
 
-    let expanded = {...this.state.expanded}
-    let remote_ids = {...this.state.remote_ids}
-    let remote_data = {...this.state.remote_data}
+    state.expanded[server] = true
+    let ancestors = [server]
 
-    let ancestors = [server_path({host, port, username})]
+    let requests = []
+    let collections = Collections.servers
 
     rest.forEach((path, i) => {
       ancestors.push(path)
-      let url = this.url_for(ancestors)
+      let url = ancestors.join('/')
 
-      expanded[url] = true
+      state.expanded[url] = true
 
-      console.log('%s => %s', path, url)
+      if (i % 2 === 0) {
+        let collection = collections.find(item => item.name === path)
+        collections = collection.collections
+
+        requests.push(this.fetchRemote(url, collection.item_label_field, state))
+      }
     })
+
+    return Promise.all(requests)
   }
-  async restoreSession(state) {
+  async restoreFromLocalForage(state) {
+    if (!await localForage.length()) return Promise.resolve()
+
     let session = await Promise.all([
       localForage.getItem('expanded'),
       localForage.getItem('remote_ids'),
@@ -209,8 +232,6 @@ class App extends Component {
       }
     })
 
-    console.log(session)
-
     if (session.splitPos) state.splitPos = session.splitPos
     if (session.expanded) state.expanded = session.expanded
 
@@ -223,11 +244,7 @@ class App extends Component {
       })
     }
 
-    // scroll to the selected node when the component is first instantiated
-    this._scrollToSelected = true
-
-    this.setState(state, () => { console.log(this.state)})
-    console.log(this.state)
+    return Promise.resolve()
   }
   componentDidMount() {
     let remote_ids = {...this.state.remote_ids}
@@ -235,7 +252,7 @@ class App extends Component {
 
     fetch('/api/servers')
       .then(response => response.json())
-      .then(json => {
+      .then(async json => {
         let ids = json.map(server_path)
         let data = {}
         json.forEach(server => { data[server_path(server)] = server })
@@ -243,12 +260,20 @@ class App extends Component {
         remote_ids.servers = ids
         remote_data.servers = data
 
-        this.restoreSession({
+        let state = {
           remote_ids,
           remote_data,
           expanded: {...this.state.expanded},
           loading: { servers: false }
-        })
+        }
+
+        await this.restoreFromLocalForage(state)
+        await this.restoreFromSelected(state)
+
+        // scroll to the selected node when the component is first instantiated
+        this._scrollToSelected = true
+
+        this.setState(state)
       })
   }
   componentWillReceiveProps(nextProps) {
