@@ -7,6 +7,12 @@ export default {
       item_icon: () => 'database',
       collections: [
         {
+          name: 'casts',
+          label: 'Casts',
+          item_label_field: 'id',
+          item_icon: () => 'cast'
+        },
+        {
           name: 'extensions',
           label: 'Extensions',
           item_label_field: 'extname',
@@ -46,7 +52,7 @@ export default {
             }
           ]
         }
-      ] 
+      ]
     },
     {
       name: 'tablespaces',

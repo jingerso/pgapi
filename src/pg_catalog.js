@@ -74,6 +74,44 @@ const routes = [
     `)
   },
   {
+    path: `${db_prefix}/extensions`,
+    query: req => pg.query(req.params).any(`
+      SELECT
+        *
+      FROM pg_extension
+      ORDER BY extname
+    `)
+  },
+  {
+    path: `${db_prefix}/casts`,
+    query: req => pg.query(req.params).any(`
+      SELECT pg_catalog.format_type(castsource, NULL) AS "Source type",
+             pg_catalog.format_type(casttarget, NULL) AS "Target type",
+             pg_catalog.format_type(castsource, NULL) || ' -> ' || pg_catalog.format_type(casttarget, NULL) as id,
+             CASE WHEN castfunc = 0 THEN '(binary coercible)'
+                  ELSE p.proname
+             END as "Function",
+             CASE WHEN c.castcontext = 'e' THEN 'no'
+                  WHEN c.castcontext = 'a' THEN 'in assignment'
+                  ELSE 'yes'
+             END as "Implicit?"
+      FROM pg_catalog.pg_cast c LEFT JOIN pg_catalog.pg_proc p
+           ON c.castfunc = p.oid
+           LEFT JOIN pg_catalog.pg_type ts
+           ON c.castsource = ts.oid
+           LEFT JOIN pg_catalog.pg_namespace ns
+           ON ns.oid = ts.typnamespace
+           LEFT JOIN pg_catalog.pg_type tt
+           ON c.casttarget = tt.oid
+           LEFT JOIN pg_catalog.pg_namespace nt
+           ON nt.oid = tt.typnamespace
+      WHERE (true  AND pg_catalog.pg_type_is_visible(ts.oid)
+      ) OR (true  AND pg_catalog.pg_type_is_visible(tt.oid)
+      )
+      ORDER BY 1, 2
+    `)
+  },
+  {
     path: `${db_prefix}/schemas/:schema/tables`,
     query: req => pg.query(req.params).any(`
       SELECT * FROM pg_tables WHERE schemaname = $/schema/ ORDER BY tablename
