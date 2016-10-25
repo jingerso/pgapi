@@ -25,7 +25,13 @@ const is_empty = (state, key) => {
   )
 }
 
-const Collection = ({params, pathname}) => {
+const DbCollection = ({params, pathname}) => {
+  return (
+    <div>{pathname}</div>
+  )
+}
+
+const DbObject = ({params, pathname}) => {
   return (
     <div>{pathname}</div>
   )
@@ -72,12 +78,12 @@ class App extends Component {
 
     if (!expanded[path]) {
       this.setState({ expanded })
-      return
+      return Promise.resolve()
     }
 
     if (remote_ids[path]) {
       this.setState({ expanded })
-      return
+      return Promise.resolve()
     }
 
     loading[path] = true
@@ -275,6 +281,9 @@ class App extends Component {
   render() {
     if (this.state.loading.servers) return <div>Loading...</div>
 
+    const server_prefix = '/:username/:host/:port'
+    const db_prefix = `${server_prefix}/databases/:database`
+
     const ids = this.state.remote_ids.servers
     let list = [];
     let scrollToIndex
@@ -299,6 +308,10 @@ class App extends Component {
       this.dbCollection({list, ...props})
     })
 
+    /*
+     * only scroll to index on a full page load/refresh not on
+     * programatic browser history push/pop
+     */
     if (this._scrollToSelected) {
       scrollToIndex = list.findIndex(item => item.selected)
       this._scrollToSelected = false
@@ -318,6 +331,7 @@ class App extends Component {
                 rowCount={list.length}
                 height={height}
                 rowHeight={21}
+                overscanRowCount={100}
                 scrollToIndex={scrollToIndex}
                 scrollToAlignment="center"
                 rowRenderer={({ index, style }) => <Tree
@@ -330,13 +344,15 @@ class App extends Component {
         </div>
         <div>
           <Match exactly pattern="/" render={() => <div>Servers</div>} />
-          <Match exactly pattern="/:username/:host/:port" component={({params}) => <div>{params.host}</div>} />
-          <Match exactly pattern="/:username/:host/:port/databases" component={Collection} />
-          <Match exactly pattern="/:username/:host/:port/databases/:database" component={Collection} />
-          <Match exactly pattern="/:username/:host/:port/tablespaces" component={Collection} />
-          <Match exactly pattern="/:username/:host/:port/tablespaces/:tablespace" component={Collection} />
-          <Match exactly pattern="/:username/:host/:port/roles" component={Collection} />
-          <Match exactly pattern="/:username/:host/:port/roles/:role" component={Collection} />
+          <Match exactly pattern={server_prefix} component={({params}) => <div>{params.host}</div>} />
+          <Match exactly pattern={`${server_prefix}/tablespaces`} component={DbCollection} />
+          <Match exactly pattern={`${server_prefix}/tablespaces/:tablespace`} component={DbObject} />
+          <Match exactly pattern={`${server_prefix}/roles`} component={DbCollection} />
+          <Match exactly pattern={`${server_prefix}/roles/role`} component={DbObject} />
+          <Match exactly pattern={`${server_prefix}/databases`} component={DbCollection} />
+          <Match exactly pattern={db_prefix} component={DbObject} />
+          <Match exactly pattern={`${db_prefix}/casts`} component={DbCollection} />
+          <Match exactly pattern={`${db_prefix}/casts/:cast`} component={DbObject} />
           <Miss render={() => <h1>Not Found</h1>} />
         </div>
       </SplitPane>

@@ -12,11 +12,38 @@ export default {
           item_label_field: 'id',
           item_icon: () => 'cast'
         },
+/*
+ * Not sure how useful it is to display catalogs
+        {
+          name: 'catalogs',
+          label: 'Catalogs',
+          item_label_field: 'id',
+          item_icon: () => 'catalog'
+        },
+*/
+        {
+          name: 'event_triggers',
+          label: 'Event Triggers',
+          item_label_field: 'id',
+          item_icon: () => 'event_trigger'
+        },
         {
           name: 'extensions',
           label: 'Extensions',
           item_label_field: 'extname',
           item_icon: () => 'extension'
+        },
+        {
+          name: 'foreign_data_wrappers',
+          label: 'Foreign Data Wrappers',
+          item_label_field: 'id',
+          item_icon: () => 'foreign_data_wrapper'
+        },
+        {
+          name: 'languages',
+          label: 'Languages',
+          item_label_field: 'id',
+          item_icon: () => 'language'
         },
         {
           name: 'schemas',
