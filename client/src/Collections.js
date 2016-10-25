@@ -62,7 +62,7 @@ export default {
     },
     {
       name: 'roles',
-      label: 'Roles',
+      label: 'Login/Group Roles',
       item_label_field: 'rolname',
       item_icon: (item) => item.rolcanlogin ? 'role' : 'group'
     }
