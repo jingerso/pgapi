@@ -218,19 +218,12 @@ class App extends Component {
   async restoreFromLocalForage(state) {
     if (!await localForage.length()) return Promise.resolve()
 
-    let session = await Promise.all([
-      localForage.getItem('expanded'),
-      localForage.getItem('remote_ids'),
-      localForage.getItem('remote_data'),
-      localForage.getItem('splitPos')
-    ]).then(results => {
-      return {
-        expanded: results[0],
-        remote_ids: results[1],
-        remote_data: results[2],
-        splitPos: results[3]
-      }
-    })
+    const keys = ['expanded','remote_ids','remote_data','splitPos']
+
+    let session = await Promise.all(keys.map(key => localForage.getItem(key)))
+      .then(results => keys.reduce((prev, cur, i) => ({[cur]: results[i], ...prev}), {}))
+
+    console.log(session)
 
     if (session.splitPos) state.splitPos = session.splitPos
     if (session.expanded) state.expanded = session.expanded
