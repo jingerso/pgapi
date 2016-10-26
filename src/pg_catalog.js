@@ -74,12 +74,47 @@ const routes = [
     `)
   },
   {
+    path: `${db_prefix}/event_triggers`,
+    query: req => pg.query(req.params).any(`
+      select * from pg_event_trigger
+    `)
+  },
+  {
+    path: `${db_prefix}/languages`,
+    query: req => pg.query(req.params).any(`
+      SELECT l.lanname AS "Name",
+             pg_catalog.pg_get_userbyid(l.lanowner) as "Owner",
+             l.lanpltrusted AS "Trusted",
+             NOT l.lanispl AS "Internal Language",
+             l.lanplcallfoid::regprocedure AS "Call Handler",
+             l.lanvalidator::regprocedure AS "Validator",
+             l.laninline::regprocedure AS "Inline Handler",
+             pg_catalog.array_to_string(l.lanacl, E'\n') AS "Access privileges"
+      FROM pg_catalog.pg_language l
+      WHERE lanplcallfoid != 0
+      ORDER BY 1
+    `)
+  },
+  {
     path: `${db_prefix}/extensions`,
     query: req => pg.query(req.params).any(`
       SELECT
         *
       FROM pg_extension
       ORDER BY extname
+    `)
+  },
+  {
+    path: `${db_prefix}/foreign_data_wrappers`,
+    query: req => pg.query(req.params).any(`
+      SELECT fdwname AS "Name",
+        pg_catalog.pg_get_userbyid(fdwowner) AS "Owner",
+        fdwhandler::pg_catalog.regproc AS "Handler",
+        fdwvalidator::pg_catalog.regproc AS "Validator",
+        pg_catalog.array_to_string(fdwacl, E'\n') AS "Access privileges",
+        fdwoptions AS "Options"
+      FROM pg_catalog.pg_foreign_data_wrapper
+      ORDER BY 1
     `)
   },
   {
@@ -110,6 +145,24 @@ const routes = [
       )
       ORDER BY 1, 2
     `)
+  },
+  {
+    path: `${db_prefix}/schemas/:schema/collations`,
+    query: req => pg.query(req.params).any(`
+      SELECT n.nspname AS "Schema",
+             c.collname AS "Name",
+             c.collcollate AS "Collate",
+             c.collctype AS "Ctype",
+             pg_catalog.obj_description(c.oid, 'pg_collation') AS "Description"
+      FROM pg_catalog.pg_collation c, pg_catalog.pg_namespace n
+      WHERE n.oid = c.collnamespace
+            AND n.nspname = $/schema/
+            AND n.nspname <> 'pg_catalog'
+            AND n.nspname <> 'information_schema'
+            AND c.collencoding IN (-1, pg_catalog.pg_char_to_encoding(pg_catalog.getdatabaseencoding()))
+        AND pg_catalog.pg_collation_is_visible(c.oid)
+      ORDER BY 1, 2
+    `, { schema: req.params.schema })
   },
   {
     path: `${db_prefix}/schemas/:schema/tables`,

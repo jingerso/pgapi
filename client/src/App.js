@@ -283,6 +283,8 @@ class App extends Component {
 
     const server_prefix = '/:username/:host/:port'
     const db_prefix = `${server_prefix}/databases/:database`
+    const schema_prefix = `${db_prefix}/schemas/:schema`
+    const table_prefix = `${schema_prefix}/tables/:table`
 
     const ids = this.state.remote_ids.servers
     let list = [];
@@ -353,6 +355,26 @@ class App extends Component {
           <Match exactly pattern={db_prefix} component={DbObject} />
           <Match exactly pattern={`${db_prefix}/casts`} component={DbCollection} />
           <Match exactly pattern={`${db_prefix}/casts/:cast`} component={DbObject} />
+          <Match exactly pattern={`${db_prefix}/event_triggers`} component={DbCollection} />
+          <Match exactly pattern={`${db_prefix}/event_triggers/:event_trigger`} component={DbObject} />
+          <Match exactly pattern={`${db_prefix}/extensions`} component={DbCollection} />
+          <Match exactly pattern={`${db_prefix}/extensions/:extension`} component={DbObject} />
+          <Match exactly pattern={`${db_prefix}/foreign_data_wrappers`} component={DbCollection} />
+          <Match exactly pattern={`${db_prefix}/foreign_data_wrappers/:foreign_data_wrapper`} component={DbObject} />
+          <Match exactly pattern={`${db_prefix}/languages`} component={DbCollection} />
+          <Match exactly pattern={`${db_prefix}/languages/:language`} component={DbObject} />
+          <Match exactly pattern={`${db_prefix}/schemas`} component={DbCollection} />
+          <Match exactly pattern={schema_prefix} component={DbObject} />
+          <Match exactly pattern={`${schema_prefix}/collations`} component={DbCollection} />
+          <Match exactly pattern={`${schema_prefix}/collations/:collation`} component={DbObject} />
+          <Match exactly pattern={`${schema_prefix}/tables`} component={DbCollection} />
+          <Match exactly pattern={table_prefix} component={DbObject} />
+          <Match exactly pattern={`${table_prefix}/columns`} component={DbCollection} />
+          <Match exactly pattern={`${table_prefix}/columns/:column`} component={DbObject} />
+          <Match exactly pattern={`${table_prefix}/indexes`} component={DbCollection} />
+          <Match exactly pattern={`${table_prefix}/indexes/:index`} component={DbObject} />
+          <Match exactly pattern={`${table_prefix}/constraints`} component={DbCollection} />
+          <Match exactly pattern={`${table_prefix}/constraints/:constraint`} component={DbObject} />
           <Miss render={() => <h1>Not Found</h1>} />
         </div>
       </SplitPane>

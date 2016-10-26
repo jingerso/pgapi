@@ -24,7 +24,7 @@ export default {
         {
           name: 'event_triggers',
           label: 'Event Triggers',
-          item_label_field: 'id',
+          item_label_field: 'evtname',
           item_icon: () => 'event_trigger'
         },
         {
@@ -36,13 +36,13 @@ export default {
         {
           name: 'foreign_data_wrappers',
           label: 'Foreign Data Wrappers',
-          item_label_field: 'id',
+          item_label_field: 'Name',
           item_icon: () => 'foreign_data_wrapper'
         },
         {
           name: 'languages',
           label: 'Languages',
-          item_label_field: 'id',
+          item_label_field: 'Name',
           item_icon: () => 'language'
         },
         {
@@ -51,6 +51,12 @@ export default {
           item_label_field: 'nspname',
           item_icon: () => 'schema',
           collections: [
+            {
+              name: 'collations',
+              label: 'Collations',
+              item_label_field: 'Name',
+              item_icon: () => 'collation'
+            },
             {
               name: 'tables',
               label: 'Tables',
